@@ -1,0 +1,17 @@
+Tried client-side puck movement
+	too much data validation required, example:
+		if the player's paddle collided with the puck at roughly the same X position, that client's puck would get stuck moving in-between the screen edge and paddle.
+		whereas on the other client's screen, the puck would be in a different position.
+	I decided that this was too expensive a problem to solve and have made the puck movement and collision checking on the server.
+
+Tried optimising the data collection of the names, position etc of both clients from the server.
+	I tried to reduce the number of calls the client made to the server for pre-game data.
+	This caused issues where one client would get stuck in retrieving the data and after a while decided that the performance increase was not worth the work effort.
+
+Implemented a "please wait" screen.
+	This was because client 1 wouldn't display the name of player 2 unless player 1 waited until player 2 had connected to the server.
+
+Puck would only move when player pressed a key.
+	Caused by SFML sockets being set to blocking mode by default. Fixed this by setting the blocking mode to false.
+	This could be used as an interesting/alternative game mode similar to Super Hot.
+	

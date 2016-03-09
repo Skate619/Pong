@@ -1,0 +1,134 @@
+sf::Clock clock;
+	sf::Time tempTime;
+	sf::TcpListener listener;
+	sf::IpAddress publicIp = sf::IpAddress::getPublicAddress();
+	sf::IpAddress localIp = sf::IpAddress::getLocalAddress();
+	sf::IpAddress ip;
+	sf::TcpSocket socket;
+	sf::Packet packet, myPacket;
+	sf::Vector2f p1Pos;
+	int port;
+	char connectionType, mode;
+	char buffer[2000];
+	bool update = false;
+	bool handshake = false;
+	std::size_t received;
+	std::string text = "Connected to: ";
+	std::string serverLocalString = localIp.toString();
+	std::string serverPublicString = publicIp.toString();
+	std::string clientLocalString = localIp.toString();
+	std::string clientPublicString = publicIp.toString();
+
+	std::cout << "Enter (s) for server or (c) for client: ";
+	std::cin >> connectionType;
+
+	if (connectionType == 's')
+	{
+		std::cout << "Your public ip: " << publicIp << "\n";
+		std::cout << "Your local ip:  " << localIp << "\n";
+		std::cout << "Enter a port to use: ";
+		std::cin >> port;
+		listener.listen(port);
+		listener.accept(socket);
+		text += "Server";
+		mode = 's';
+	}
+	else if (connectionType == 'c')
+	{
+		std::cout << "Enter ip address: ";
+		std::cin >> ip;
+		std::cout << "Enter port to use: ";
+		std::cin >> port;
+		socket.connect(ip, port);
+		text += "Client";
+		mode = 'r';
+		std::string myString = ip.toString();
+		myPacket << myString << clientLocalString << clientPublicString;
+		socket.send(myPacket);
+	}
+	std::string myString = ip.toString();
+	sf::RectangleShape rect1, rect2;
+	rect1.setSize(sf::Vector2f(20, 20));
+	rect2.setSize(sf::Vector2f(20, 20));
+
+	rect1.setFillColor(sf::Color::Red);
+	rect2.setFillColor(sf::Color::Blue);
+
+	sf::RenderWindow win(sf::VideoMode(800, 600, 32), "Packets");
+
+	sf::Vector2f prevPos, p2Pos;
+
+	socket.setBlocking(false);
+
+	socket.receive(myPacket);
+	if (myPacket >> myString >> clientLocalString >> clientPublicString)
+	{
+		if (myString == serverLocalString || myString == serverPublicString)
+		{
+			if (myString == serverLocalString && connectionType == 's')
+			{
+				std::cout << "Connection from: " << clientLocalString;
+			}
+			else if (myString == serverPublicString && connectionType == 's')
+			{
+				std::cout << "Connection from: " << clientPublicString;
+			}
+		}
+	}
+
+	if (connectionType == 'c')
+		std::cout << "Connected to: " << ip;
+		while (win.isOpen())
+{
+	sf::Event Event;
+	while (win.pollEvent(Event))
+	{
+		if (Event.type == sf::Event::Closed)
+			win.close();
+		else if (Event.type == sf::Event::GainedFocus)
+			update = true;
+		else if (Event.type == sf::Event::LostFocus)
+			update = false;
+	}
+
+	prevPos = rect1.getPosition();
+
+	tempTime = clock.getElapsedTime();
+	float elapsedTime = tempTime.asSeconds();
+	if (elapsedTime > 1.0f / 60.0f)
+	{
+		tempTime = clock.restart();
+		if (update)
+		{
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+			{
+				float move = rect1.getPosition().y;
+				move = -200.0f * elapsedTime;
+				rect1.setPosition(rect1.getPosition().x, rect1.getPosition().y + move);
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+			{
+				float move = rect1.getPosition().y;
+				move = 200.0f * elapsedTime;
+				rect1.setPosition(rect1.getPosition().x, rect1.getPosition().y + move);
+			}
+		}
+	}
+
+	if (prevPos != rect1.getPosition())
+	{
+		packet << rect1.getPosition().x << rect1.getPosition().y;
+		socket.send(packet);
+	}
+
+	socket.receive(packet);
+	if (packet >> p2Pos.x >> p2Pos.y)
+		rect2.setPosition(p2Pos);
+
+	win.draw(rect1);
+	win.draw(rect2);
+	win.display();
+	win.clear();
+}
+return 0;
+}
